@@ -4,7 +4,48 @@
     ViewData["Title"] = "Home page";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://docs.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container">
+    <div class="row">&nbsp;</div>
+    <div id="user-container">
+        <div class="row">
+            <div class="col-2">User Id:</div>
+            <div class="col-4"><input type="text" class="form-control" id="userInput" /></div>
+            <div class="col-6">
+                <input type="button" id="connectButton" class="btn btn-primary" value="Connect" />
+            </div>
+        </div>
+       
+    </div>
+    <div id="bid-container" style="display: none" >
+        <div class="row" style="margin-bottom: 20px;">
+            <div class="col-2">User Id:</div>
+            <div class="col-4" id="userId">TEST</div>
+        </div>
+        <div class="row">
+            <div class="col-2">Amount</div>
+            <div class="col-4"><input type="number" class="form-control" id="amount" /></div>
+            <div class="col-6">
+                <input type="button" id="placeButton" class="btn btn-primary" value="Place Bid" />
+            </div>
+        </div>
+        <div class="row">&nbsp;</div>
+    </div>
 </div>
+<div class="row">
+    <div class="col-12">
+        <hr />
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <ul id="bidsList" class="list-group">
+        </ul>
+
+    </div>
+</div>
+
+@section Scripts
+{
+    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script src="~/js/bid.js"></script>
+}
