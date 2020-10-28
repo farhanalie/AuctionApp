@@ -11,7 +11,11 @@ $(function () {
     connection.on("ReceiveBid", function (bid) {
         console.log(bid);
 
-        $("#bidsList").prepend(`<li class="list-group-item"><span class="font-weight-bold">${bid.userId}</span> ${bid.createdAt} <span class="badge badge-primary badge-pill">£${bid.amount}</span></li>`);
+        $("#bidsTable > tbody").prepend(`<tr>
+                    <td>£ ${bid.amount}</td>
+                    <td>${bid.userId}</td>
+                    <td>${bid.createdAt}</td>
+                </tr>`);
         //var user = bid.user;
         //var message = bid.message;
         //var msg = message.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -28,20 +32,16 @@ $(function () {
         return console.error(err.toString());
     });
 
-
-
-
-    $("#connectButton").click(function () {
-
-        $("#userId").text($("#userInput").val());
-        $("#user-container").hide();
+    $("#signupButton").click(function () {
+        $("#userId").prop("disabled", true);
+        $("#maxBid").prop("disabled", true);
         $("#bid-container").show();
-
+        $(this).hide();
     });
 
     $("#placeButton").click(function () {
 
-        const userId = $("#userId").text();
+        const userId = $("#userId").val();
         const amount = $("#amount").val();
 
         const bid = {
@@ -52,6 +52,8 @@ $(function () {
         connection.invoke("placeBid", bid).catch(function (err) {
             return console.error(err.toString());
         });
+
+        $("#amount").val("");
         event.preventDefault();
     });
 
