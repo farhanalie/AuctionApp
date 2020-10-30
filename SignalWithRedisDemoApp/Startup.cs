@@ -4,6 +4,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using SignalWithRedisDemoApp.Hubs;
+using SignalWithRedisDemoApp.Middleware;
+using SignalWithRedisDemoApp.Services;
+using SignalWithRedisDemoApp.Services.Implementations;
+using StackExchange.Redis.Extensions.Core.Configuration;
+using StackExchange.Redis.Extensions.System.Text.Json;
 
 namespace SignalWithRedisDemoApp
 {
@@ -20,10 +25,17 @@ namespace SignalWithRedisDemoApp
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddRazorPages();
+            //services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect("RedisCs"));
+            var redisConfiguration = Configuration.GetSection("Redis").Get<RedisConfiguration>();
+            services.AddStackExchangeRedisExtensions<SystemTextJsonSerializer>(redisConfiguration);
+            services.AddControllers();
             services.AddSignalR(options =>
             {
                 options.EnableDetailedErrors = true;
             });
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAuctionService, AuctionService>();
+            services.AddScoped<IBidService, BidService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -41,15 +53,21 @@ namespace SignalWithRedisDemoApp
             }
 
             app.UseHttpsRedirection();
+
+            // Add Error Handling Middleware
+            app.UseMiddleware(typeof(ErrorHandlingMiddleware));
             app.UseStaticFiles();
 
             app.UseRouting();
 
             app.UseAuthorization();
 
+            app.UserRedisInformation();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapRazorPages();
+                endpoints.MapControllers();
                 endpoints.MapHub<BidHub>("/bidhub");
             });
         }

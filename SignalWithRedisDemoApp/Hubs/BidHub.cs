@@ -1,17 +1,14 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
-using SignalWithRedisDemoApp.Models;
 
 namespace SignalWithRedisDemoApp.Hubs
 {
     public class BidHub : Hub
     {
-        public async Task PlaceBid(Bid bid)
+        public async Task SubscribeToAuction(string auctionId)
         {
-            // Todo: add to redis
-            bid.CreatedAt = DateTime.UtcNow;
-            await Clients.All.SendAsync("ReceiveBid", bid);
+            await Groups.AddToGroupAsync(Context.ConnectionId, auctionId);
         }
+        
     }
 }

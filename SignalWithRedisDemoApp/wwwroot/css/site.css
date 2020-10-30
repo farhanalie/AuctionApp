@@ -69,3 +69,8 @@ body {
   white-space: nowrap;
   line-height: 60px; /* Vertically center the text there */
 }
+
+
+.table tbody tr:first-child td {
+    background-color: #c3e6cb;
+}
