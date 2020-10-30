@@ -4,35 +4,58 @@
 $(function () {
     const pendingBidsQueue = new Queue();
     let listOfBidsLoaded = false;
-    let currentBid = 0;
+    let currentBid = { amount: 0};
     let userId = "";
     const apiBaseUrl = "/api/bids/";
-    const connection = new signalR.HubConnectionBuilder().withUrl("/bidhub").build();
+    const connection = new signalR.HubConnectionBuilder()
+                            .withUrl("/bidhub")
+                            .withAutomaticReconnect()
+                            .build();
+    signalrStart();
+
+    async function signalrStart() {
+        try {
+            await connection.start();
+            console.assert(connection.state === signalR.HubConnectionState.Connected);
+            console.log("SignalR Connected.");
+        } catch (err) {
+            console.assert(connection.state === signalR.HubConnectionState.Disconnected);
+            console.log(err);
+            setTimeout(() => start(), 5000);
+        }
+    };
 
     connection.on("ReceiveBid", function (bid) {
-        console.log(bid);
         if (listOfBidsLoaded === true) {
-            currentBid = bid.amount;
-            $("#amount").val(currentBid + 1000);
+            currentBid = bid;
+            $("#amount").val(currentBid.amount + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
         } else {
             pendingBidsQueue.enqueue(bid);
         }
     });
 
-    connection.start().then(function () {
-        console.log("connection established");
-    }).catch(function (err) {
-        return console.error(err.toString());
+    connection.onreconnecting(error => {
+        console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
+        disableBidding();
+        $("#reconnecting-alert").show();
     });
 
-    connection.disconneted(function () {
-        connection.log('Connection closed. Retrying...');
-        setTimeout(function () { connection.start(); }, 5000);
+    connection.onreconnected(connectionId => {
+        console.assert(connection.state === signalR.HubConnectionState.Connected);
+        enableBidding();
+        $("#reconnecting-alert").hide();
+        $("#reconnected-alert").hide();
+
+    });
+
+    connection.onclose(error => {
+        console.assert(connection.state === signalR.HubConnectionState.Disconnected);
+        disableBidding();
+        $("#disconnected-alert").show();
     });
 
     $("#connectButton").click(function () {
-        $("#loading").show();
 
         userId = $("#userId").prop("disabled", true).val();
         $("#auctionId").prop("disabled", true);
@@ -43,6 +66,7 @@ $(function () {
         const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
         flipDown.start();
         flipDown.ifEnded(onBidExpired);
+
         subscribeToAuction(auctionId);
         getBids(auctionId);
         $("#bid-container").show();
@@ -54,7 +78,11 @@ $(function () {
         const amount = $("#amount").val();
         const auctionId = $("#auctionId").val();
 
-        if (amount > currentBid) {
+        if (amount <= currentBid.amount) {
+            alert("amount should be more than max bid");
+        } else if (userId === currentBid.userId) {
+            alert("You are the highest bidder");
+        } else {
             const bid = {
                 UserId: userId,
                 Amount: Number(amount),
@@ -76,9 +104,7 @@ $(function () {
                 }
             });
 
-            $("#amount").val(currentBid+1000);
-        } else {
-            alert("amount should be more than max bid");
+            $("#amount").val(currentBid.amount + 1000);
         }
 
         event.preventDefault();
@@ -91,6 +117,7 @@ $(function () {
     }
 
     function getBids(auctionId) {
+        $("#loading").show();
         $.ajax({
             url: apiBaseUrl + auctionId,
             dataType: "json",
@@ -116,7 +143,7 @@ $(function () {
             bids.forEach(function (bid, index) {
                 rows.push(createRowHtml(bid));
                 if (index === 0) {
-                    currentBid = bid.amount;
+                    currentBid = bid;
                 }
             });
         }
@@ -125,7 +152,7 @@ $(function () {
         // double checking if a element is pending during execution
         while (pendingBidsQueue.isEmpty() !== true) {
             const bid = pendingBidsQueue.dequeue();
-            currentBid = bid.amount;
+            currentBid = bid;
             rows.unshift(createRowHtml(bid));
         }
         // using pure javascript to create list of elements as it is faster than jquery append https://howchoo.com/code/learn-the-slow-and-fast-way-to-append-elements-to-the-dom
@@ -133,11 +160,10 @@ $(function () {
         listOfBidsLoaded = true;
         $("#loading").hide();
         $("#bidsTable").show();
-        if (currentBid) {
-            $("#amount").val(currentBid + 1000);
+        if (currentBid.amount) {
+            $("#amount").val(currentBid.amount + 1000);
         }
-        $("#placeButton").prop("disabled", false);
-
+        enableBidding();
         //},5000);
     }
 
@@ -172,7 +198,15 @@ $(function () {
     }
 
     function onBidExpired() {
+        disableBidding();
+    }
+
+    function disableBidding() {
         $("#placeButton").prop("disabled", true);
+    }
+
+    function enableBidding() {
+        $("#placeButton").prop("disabled", false);
     }
 });
 

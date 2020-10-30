@@ -11,12 +11,20 @@
 }
 
 <div class="container">
+    <div id="disconnected-alert" class="alert alert-danger" role="alert" style="display: none">
+        Connection to auction is lost. Try refreshing this page to restart the connection.
+    </div>
+    <div id="reconnecting-alert" class="alert alert-danger" role="alert" style="display: none">
+        Connection to auction is lost. we are trying to connect you.
+    </div>
+    <div id="reconnected-alert" class="alert alert-success" role="alert" style="display: none">
+        Connection reestablished. You can bid now.
+    </div>
     <div class="row" id="user-container">
         <div class="col-sm-6">
             <div class="form-group">
                 <label for="userId">User Id:</label>
-                @*<input type="text" class="form-control" placeholder="Enter User Id" id="userId">*@
-                <select id="userId" class="form-control" asp-items="@(new SelectList(Model.Users,"UserId","UserId"))"></select>
+                <select id="userId" class="form-control" asp-items="@(new SelectList(Model.Users, "UserId", "UserId" ))"></select>
             </div>
 
             <div class="form-group">
@@ -31,7 +39,6 @@
                         }
                     }
                 </select>
-                @*<select id="auctionId" class="form-control" asp-items="@(new SelectList(Model.Auctions,"AuctionId","AuctionId"))"></select>*@
             </div>
             @*<div class="form-group">
                     <label for="maxBid">Max bid:</label>
@@ -52,7 +59,7 @@
                 <input type="button" id="placeButton" class="btn btn-primary" value="Place Bid" />
             </div>
         </div>
-        
+
     </div>
     <div class="row">
         <div class="col-sm-12">
