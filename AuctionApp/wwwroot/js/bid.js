@@ -4,15 +4,16 @@
 $(function () {
     const pendingBidsQueue = new Queue();
     let listOfBidsLoaded = false;
+    let currentBid = 0;
+    let userId = "";
     const apiBaseUrl = "/api/bids/";
     const connection = new signalR.HubConnectionBuilder().withUrl("/bidhub").build();
-
-    //Disable send button until connection is established
-    $("#placeButton").prop("disabled", true);
 
     connection.on("ReceiveBid", function (bid) {
         console.log(bid);
         if (listOfBidsLoaded === true) {
+            currentBid = bid.amount;
+            $("#amount").val(currentBid + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
         } else {
             pendingBidsQueue.enqueue(bid);
@@ -21,49 +22,65 @@ $(function () {
 
     connection.start().then(function () {
         console.log("connection established");
-        $("#placeButton").prop("disabled", false);
     }).catch(function (err) {
         return console.error(err.toString());
     });
 
+    connection.disconneted(function () {
+        connection.log('Connection closed. Retrying...');
+        setTimeout(function () { connection.start(); }, 5000);
+    });
+
     $("#connectButton").click(function () {
         $("#loading").show();
-        $("#userId").prop("disabled", true);
-        const auctionId = $("#auctionId").prop("disabled", true).val();
+
+        userId = $("#userId").prop("disabled", true).val();
+        $("#auctionId").prop("disabled", true);
+        const selectedAuction = $("#auctionId option:selected");
+        const auctionId = $(selectedAuction).val();
+        const expiry = $(selectedAuction).data("expiry");;
+        const auctionExpiry = new Date(expiry);
+        const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
+        flipDown.start();
+        flipDown.ifEnded(onBidExpired);
         subscribeToAuction(auctionId);
         getBids(auctionId);
         $("#bid-container").show();
-        $(this).hide();
+        $("#connectButton").hide();
     });
 
     $("#placeButton").click(function () {
 
-        const userId = $("#userId").val();
         const amount = $("#amount").val();
         const auctionId = $("#auctionId").val();
 
-        const bid = {
-            UserId: userId,
-            Amount: Number(amount),
-            AuctionId: auctionId
-        };
+        if (amount > currentBid) {
+            const bid = {
+                UserId: userId,
+                Amount: Number(amount),
+                AuctionId: auctionId
+            };
 
-        $.ajax({
-            url: apiBaseUrl,
-            dataType: "json",
-            type: "POST",
-            data: JSON.stringify(bid),
-            contentType: "application/json; charset=utf-8",
-            success: function (result) {
-                console.log("successfully placed a bid", result);
-            },
-            error: function (err) {
-                console.error(err.responseText);
-                alert("failed to add request");
-            }
-        });
+            $.ajax({
+                url: apiBaseUrl,
+                dataType: "json",
+                type: "POST",
+                data: JSON.stringify(bid),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    console.log("successfully placed a bid", result);
+                },
+                error: function (err) {
+                    console.error(err.responseText);
+                    alert("failed to add request");
+                }
+            });
 
-        $("#amount").val("");
+            $("#amount").val(currentBid+1000);
+        } else {
+            alert("amount should be more than max bid");
+        }
+
         event.preventDefault();
     });
 
@@ -98,28 +115,38 @@ $(function () {
             mergeAndPrepareBids(bids);
             bids.forEach(function (bid, index) {
                 rows.push(createRowHtml(bid));
+                if (index === 0) {
+                    currentBid = bid.amount;
+                }
             });
         }
         //setTimeout(function () {
 
         // double checking if a element is pending during execution
         while (pendingBidsQueue.isEmpty() !== true) {
-            rows.unshift(createRowHtml(pendingBidsQueue.dequeue()));
+            const bid = pendingBidsQueue.dequeue();
+            currentBid = bid.amount;
+            rows.unshift(createRowHtml(bid));
         }
         // using pure javascript to create list of elements as it is faster than jquery append https://howchoo.com/code/learn-the-slow-and-fast-way-to-append-elements-to-the-dom
         document.getElementById("bidsTable").getElementsByTagName("tbody")[0].innerHTML = rows.join("");
         listOfBidsLoaded = true;
         $("#loading").hide();
         $("#bidsTable").show();
+        if (currentBid) {
+            $("#amount").val(currentBid + 1000);
+        }
+        $("#placeButton").prop("disabled", false);
 
         //},5000);
     }
 
     function createRowHtml(bid) {
-        return `<tr>
-                    <td>£ ${bid.amount}</td>
+        const css = userId === bid.userId ? "my-bid-row" : "";
+        return `<tr class="${css}" >
                     <td>${bid.userId}</td>
-                    <td>${bid.createdAt}</td>
+                    <td>${(new Date(bid.createdAt)).toLocaleString()}</td>
+                    <td>£ ${bid.amount}</td>
                 </tr>`;
     }
 
@@ -142,6 +169,10 @@ $(function () {
         return myArr.filter((obj, pos, arr) => {
             return arr.map(mapObj => mapObj[prop]).indexOf(obj[prop]) === pos;
         });
+    }
+
+    function onBidExpired() {
+        $("#placeButton").prop("disabled", true);
     }
 });
 

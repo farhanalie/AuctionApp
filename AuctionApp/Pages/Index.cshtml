@@ -2,6 +2,12 @@
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
+    var auctionSelected = true;
+}
+
+@section Head
+{
+    <link href="~/lib/flip-down/flipdown.min.css" rel="stylesheet" />
 }
 
 <div class="container">
@@ -15,12 +21,22 @@
 
             <div class="form-group">
                 <label for="auctionId">Auction:</label>
-                <select id="auctionId" class="form-control" asp-items="@(new SelectList(Model.Auctions,"AuctionId","AuctionId"))"></select>
+                <select id="auctionId" class="form-control">
+                    @foreach (var auction in Model.Auctions)
+                    {
+                        <option selected="@auctionSelected" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
+                        if (auctionSelected)
+                        {
+                            auctionSelected = false;
+                        }
+                    }
+                </select>
+                @*<select id="auctionId" class="form-control" asp-items="@(new SelectList(Model.Auctions,"AuctionId","AuctionId"))"></select>*@
             </div>
             @*<div class="form-group">
-            <label for="maxBid">Max bid:</label>
-            <input type="number" class="form-control" placeholder="Enter max bid" id="maxBid">
-        </div>*@
+                    <label for="maxBid">Max bid:</label>
+                    <input type="number" class="form-control" placeholder="Enter max bid" id="maxBid">
+                </div>*@
             <button type="button" id="connectButton" class="btn btn-primary">Connect</button>
 
         </div>
@@ -30,14 +46,24 @@
             <hr />
         </div>
         <div class="col-sm-6 form-inline">
-            <label for="amount" class="mr-sm-5">Amount:</label>
-            <input type="number" class="form-control mr-sm-5" placeholder="Enter amount" id="amount">
-            <input type="button" id="placeButton" class="btn btn-primary" value="Place Bid" />
+            <div class="form-group">
+                <label for="amount" class="mr-sm-5">Amount:</label>
+                <input type="number" class="form-control mr-sm-5" placeholder="Enter amount" id="amount">
+                <input type="button" id="placeButton" class="btn btn-primary" value="Place Bid" />
+            </div>
         </div>
+        
     </div>
     <div class="row">
-        <div class="col-12">
+        <div class="col-sm-12">
             <hr />
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-sm-3">
+        </div>
+        <div class="col-sm-6">
+            <div id="flipdown" class="flipdown"></div>
         </div>
     </div>
     <div class="row">
@@ -45,12 +71,12 @@
             <div id="loading" class="text-center" style="display: none">
                 <img src="~/images/tg_loading_spinner.gif" alt="loading..." />
             </div>
-            <table id="bidsTable" class="table  table-striped" style="display: none">
+            <table id="bidsTable" class="table" style="display: none">
                 <thead>
                     <tr>
-                        <th>Bid</th>
                         <th>User Id</th>
-                        <th>Placed At</th>
+                        <th>Time</th>
+                        <th>Bid</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -62,8 +88,9 @@
 
 @section Scripts
 {
+    <script src="~/lib/flip-down/flipdown.min.js"></script>
     <script src="~/lib/lodash/lodash.min.js"></script>
     <script src="~/js/Queue.js"></script>
-    <script src="~/js/signalr/dist/browser/signalr.js"></script>
+    <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
     <script src="~/js/bid.js"></script>
 }

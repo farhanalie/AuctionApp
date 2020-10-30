@@ -6,6 +6,6 @@ namespace AuctionApp.Models
     {
         public string AuctionId { get; set; }
         public int? ReservePrice { get; set; }
-        public DateTime? ExpiredAt { get; set; }
+        public DateTimeOffset? ExpiredAt { get; set; }
     }
 }

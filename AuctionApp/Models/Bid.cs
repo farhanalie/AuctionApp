@@ -8,7 +8,7 @@ namespace AuctionApp.Models
         public string UserId { get; set; }
         public string AuctionId { get; set; }
         public int Amount { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
 
     }
 }

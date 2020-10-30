@@ -34,11 +34,11 @@ namespace AuctionApp.Shared
             {
                 var auctions = new List<Auction>
                 {
-                    new Auction{AuctionId = "Auction1", ReservePrice = null, ExpiredAt = DateTime.Now.AddDays(5)},
-                    new Auction{AuctionId = "Auction2", ReservePrice = 100000, ExpiredAt = DateTime.Now.AddDays(6)},
-                    new Auction{AuctionId = "Auction3", ReservePrice = 50000, ExpiredAt = DateTime.Now.AddDays(7)},
-                    new Auction{AuctionId = "Auction4", ReservePrice = null, ExpiredAt = DateTime.Now.AddDays(8)},
-                    new Auction{AuctionId = "Auction5", ReservePrice = 200000, ExpiredAt = DateTime.Now.AddDays(9)},
+                    new Auction{AuctionId = "Auction1", ReservePrice = null, ExpiredAt = DateTime.UtcNow.AddDays(5)},
+                    new Auction{AuctionId = "Auction2", ReservePrice = 100000, ExpiredAt = DateTime.UtcNow.AddDays(6)},
+                    new Auction{AuctionId = "Auction3", ReservePrice = 50000, ExpiredAt = DateTime.UtcNow.AddDays(7)},
+                    new Auction{AuctionId = "Auction4", ReservePrice = null, ExpiredAt = DateTime.UtcNow.AddDays(8)},
+                    new Auction{AuctionId = "Auction5", ReservePrice = 200000, ExpiredAt = DateTime.UtcNow.AddDays(9)},
                 };
                 _database.SetAddAllAsync(Constants.Key.Auctions, CommandFlags.None, auctions.ToArray()).GetAwaiter().GetResult(); ;
 
