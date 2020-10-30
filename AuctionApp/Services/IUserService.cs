@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
-using SignalWithRedisDemoApp.Models;
+using AuctionApp.Models;
 
-namespace SignalWithRedisDemoApp.Services
+namespace AuctionApp.Services
 {
     public interface IUserService
     {

@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using AuctionApp.Hubs;
+using AuctionApp.Models;
+using AuctionApp.Shared;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
-using SignalWithRedisDemoApp.Hubs;
-using SignalWithRedisDemoApp.Models;
-using SignalWithRedisDemoApp.Shared;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
-namespace SignalWithRedisDemoApp.Services.Implementations
+namespace AuctionApp.Services.Implementations
 {
     public class BidService : IBidService
     {

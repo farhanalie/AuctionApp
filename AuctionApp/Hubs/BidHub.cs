@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
-namespace SignalWithRedisDemoApp.Hubs
+namespace AuctionApp.Hubs
 {
     public class BidHub : Hub
     {

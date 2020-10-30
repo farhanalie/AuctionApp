@@ -1,12 +1,12 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AuctionApp.Models;
+using AuctionApp.Shared;
 using Microsoft.Extensions.Logging;
-using SignalWithRedisDemoApp.Models;
-using SignalWithRedisDemoApp.Shared;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
-namespace SignalWithRedisDemoApp.Services.Implementations
+namespace AuctionApp.Services.Implementations
 {
     public class UserService : IUserService
     {

@@ -1,4 +1,4 @@
-﻿namespace SignalWithRedisDemoApp.Models
+﻿namespace AuctionApp.Models
 {
     public class UserAuction 
     {

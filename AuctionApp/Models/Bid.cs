@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace SignalWithRedisDemoApp.Models
+namespace AuctionApp.Models
 {
     public class Bid
     {

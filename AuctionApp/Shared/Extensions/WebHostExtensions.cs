@@ -2,7 +2,7 @@
 using Microsoft.Extensions.Hosting;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
-namespace SignalWithRedisDemoApp.Shared.Extensions
+namespace AuctionApp.Shared.Extensions
 {
     public static class WebHostExtensions
     {

@@ -1,16 +1,16 @@
+using AuctionApp.Hubs;
+using AuctionApp.Middleware;
+using AuctionApp.Services;
+using AuctionApp.Services.Implementations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using SignalWithRedisDemoApp.Hubs;
-using SignalWithRedisDemoApp.Middleware;
-using SignalWithRedisDemoApp.Services;
-using SignalWithRedisDemoApp.Services.Implementations;
 using StackExchange.Redis.Extensions.Core.Configuration;
 using StackExchange.Redis.Extensions.System.Text.Json;
 
-namespace SignalWithRedisDemoApp
+namespace AuctionApp
 {
     public class Startup
     {

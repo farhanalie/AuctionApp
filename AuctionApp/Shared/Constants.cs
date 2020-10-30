@@ -1,4 +1,4 @@
-﻿namespace SignalWithRedisDemoApp.Shared
+﻿namespace AuctionApp.Shared
 {
     public static class Constants
     {

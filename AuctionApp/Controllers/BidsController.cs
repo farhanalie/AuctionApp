@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AuctionApp.Models;
+using AuctionApp.Services;
 using Microsoft.AspNetCore.Mvc;
-using SignalWithRedisDemoApp.Models;
-using SignalWithRedisDemoApp.Services;
 
-namespace SignalWithRedisDemoApp.Controllers
+namespace AuctionApp.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

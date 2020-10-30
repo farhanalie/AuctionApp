@@ -2,11 +2,11 @@
 using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
+using AuctionApp.Shared.Errors;
+using AuctionApp.Shared.Exceptions;
 using Microsoft.AspNetCore.Http;
-using SignalWithRedisDemoApp.Shared.Errors;
-using SignalWithRedisDemoApp.Shared.Exceptions;
 
-namespace SignalWithRedisDemoApp.Middleware
+namespace AuctionApp.Middleware
 {
     public class ErrorHandlingMiddleware
     {

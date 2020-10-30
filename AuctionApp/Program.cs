@@ -1,8 +1,8 @@
+using AuctionApp.Shared.Extensions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
-using SignalWithRedisDemoApp.Shared.Extensions;
 
-namespace SignalWithRedisDemoApp
+namespace AuctionApp
 {
     public class Program
     {

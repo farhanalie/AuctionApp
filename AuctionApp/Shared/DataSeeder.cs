@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using SignalWithRedisDemoApp.Models;
+using AuctionApp.Models;
 using StackExchange.Redis;
 using StackExchange.Redis.Extensions.Core.Abstractions;
 
-namespace SignalWithRedisDemoApp.Shared
+namespace AuctionApp.Shared
 {
     public class DataSeeder
     {

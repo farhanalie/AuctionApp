@@ -1,4 +1,4 @@
-namespace SignalWithRedisDemoApp.Shared.Errors
+namespace AuctionApp.Shared.Errors
 {
     public class Error
     {

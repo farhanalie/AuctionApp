@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using AuctionApp.Models;
+using AuctionApp.Services;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
-using SignalWithRedisDemoApp.Models;
-using SignalWithRedisDemoApp.Services;
 
-namespace SignalWithRedisDemoApp.Pages
+namespace AuctionApp.Pages
 {
     public class IndexModel : PageModel
     {

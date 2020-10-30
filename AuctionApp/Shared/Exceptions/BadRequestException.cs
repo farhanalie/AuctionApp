@@ -1,6 +1,6 @@
 using System;
 
-namespace SignalWithRedisDemoApp.Shared.Exceptions
+namespace AuctionApp.Shared.Exceptions
 {
     public class BadRequestException : Exception
     {
