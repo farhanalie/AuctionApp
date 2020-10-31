@@ -29,6 +29,9 @@ namespace AuctionApp.Services.Implementations
             var currentBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + bid.AuctionId);
             if (currentBid != null && bid.Amount <= currentBid.Amount)
                 throw new BadRequestException("amount should be more than max bid");
+            
+            if (currentBid != null && bid.UserId == currentBid.UserId)
+                throw new BadRequestException("You are already the highest bidder");
 
             bid.CreatedAt = DateTime.UtcNow;
             bid.BidId = Guid.NewGuid();

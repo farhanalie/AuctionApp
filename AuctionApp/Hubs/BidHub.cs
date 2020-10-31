@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 
 namespace AuctionApp.Hubs
@@ -7,6 +8,7 @@ namespace AuctionApp.Hubs
     {
         public async Task SubscribeToAuction(string auctionId)
         {
+            //throw new Exception("mock failed");
             await Groups.AddToGroupAsync(Context.ConnectionId, auctionId);
         }
         

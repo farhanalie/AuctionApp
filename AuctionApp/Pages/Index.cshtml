@@ -32,7 +32,7 @@
                 <select id="auctionId" class="form-control">
                     @foreach (var auction in Model.Auctions)
                     {
-                        <option selected="@auctionSelected" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
+                        <option selected="@auctionSelected" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
                         if (auctionSelected)
                         {
                             auctionSelected = false;
@@ -67,10 +67,14 @@
         </div>
     </div>
     <div class="row mb-3">
-        <div class="col-sm-3">
+        <div class="col-md-3">
+            <h1 id="current-bid-container" style="display: none" class="mt-5"><span class="badge badge-secondary">Bid <span id="current-bid"></span></span></h1>
         </div>
-        <div class="col-sm-6">
+        <div class="col-md-6">
             <div id="flipdown" class="flipdown"></div>
+        </div>
+        <div class="col-md-3">
+            <h1 id="reserve-price-container" style="display: none" class="mt-5"><span class="badge badge-secondary">Reserve <span id="reserve-price"></span></span></h1>
         </div>
     </div>
     <div class="row">

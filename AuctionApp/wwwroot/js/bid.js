@@ -30,6 +30,8 @@ $(function () {
             currentBid = bid;
             $("#amount").val(currentBid.amount + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
+            bindCurrentBid();
+            bindReservePrice();
         } else {
             pendingBidsQueue.enqueue(bid);
         }
@@ -56,21 +58,7 @@ $(function () {
     });
 
     $("#connectButton").click(function () {
-
-        userId = $("#userId").prop("disabled", true).val();
-        $("#auctionId").prop("disabled", true);
-        const selectedAuction = $("#auctionId option:selected");
-        const auctionId = $(selectedAuction).val();
-        const expiry = $(selectedAuction).data("expiry");;
-        const auctionExpiry = new Date(expiry);
-        const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
-        flipDown.start();
-        flipDown.ifEnded(onBidExpired);
-
-        subscribeToAuction(auctionId);
-        getBids(auctionId);
-        $("#bid-container").show();
-        $("#connectButton").hide();
+        subscribeToAuction();
     });
 
     $("#placeButton").click(function () {
@@ -81,7 +69,7 @@ $(function () {
         if (amount <= currentBid.amount) {
             alert("amount should be more than max bid");
         } else if (userId === currentBid.userId) {
-            alert("You are the highest bidder");
+            alert("You are already the highest bidder");
         } else {
             const bid = {
                 UserId: userId,
@@ -100,7 +88,11 @@ $(function () {
                 },
                 error: function (err) {
                     console.error(err.responseText);
-                    alert("failed to add request");
+                    if (err.responseJSON && err.responseJSON.Error.StatusCode === 400) {
+                        alert(err.responseJSON.Error.Message);
+                    } else {
+                        alert("failed to add request");
+                    }
                 }
             });
 
@@ -110,10 +102,27 @@ $(function () {
         event.preventDefault();
     });
 
-    function subscribeToAuction(auctionId) {
-        connection.invoke("subscribeToAuction", auctionId).catch(function (err) {
-            return console.error(err.toString());
-        });
+    async function subscribeToAuction() {
+        try {
+            const selectedAuction = $("#auctionId option:selected");
+            const auctionId = $(selectedAuction).val();
+
+            await connection.invoke("subscribeToAuction", auctionId);
+
+            userId = $("#userId").prop("disabled", true).val();
+            $("#auctionId").prop("disabled", true);
+            const expiry = $(selectedAuction).data("expiry");
+            const auctionExpiry = new Date(expiry);
+            const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
+            flipDown.start();
+            flipDown.ifEnded(onBidExpired);
+            getBids(auctionId);
+
+            
+        } catch (err) {
+            console.error(err);
+            $("#disconnected-alert").show();
+        }
     }
 
     function getBids(auctionId) {
@@ -163,8 +172,40 @@ $(function () {
         if (currentBid.amount) {
             $("#amount").val(currentBid.amount + 1000);
         }
+
+        bindReservePrice();
+        bindCurrentBid();
+
+        $("#bid-container").show();
+        $("#connectButton").hide();
+
         enableBidding();
         //},5000);
+    }
+
+    function bindCurrentBid() {
+        $("#current-bid").text(currentBid.amount);
+        const currentBidContainer = $("#current-bid-container").val(currentBid.amount);
+        if (userId === currentBid.userId) {
+            currentBidContainer.children(":first").removeClass("badge-secondary").addClass("badge-success");
+        } else {
+            currentBidContainer.children(":first").removeClass("badge-success").addClass("badge-secondary");
+        }
+        currentBidContainer.show();
+    }
+
+    function bindReservePrice() {
+        const reservePrice = $("#auctionId option:selected").data("reserve-price");
+        if (reservePrice) {
+            $("#reserve-price").text(reservePrice);
+            const reservePriceContainer = $("#reserve-price-container").val(reservePrice);
+            if (currentBid.amount >= reservePrice) {
+                reservePriceContainer.children(":first").removeClass("badge-secondary").addClass("badge-success");
+            } else {
+                reservePriceContainer.children(":first").removeClass("badge-success").addClass("badge-secondary");
+            }
+            reservePriceContainer.show();
+        }
     }
 
     function createRowHtml(bid) {
