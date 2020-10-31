@@ -211,7 +211,7 @@ $(function () {
     function createRowHtml(bid) {
         const css = userId === bid.userId ? "my-bid-row" : "";
         return `<tr class="${css}" >
-                    <td>${bid.userId}</td>
+                    <td>${userId === bid.userId ? "You" : bid.userId}</td>
                     <td>${(new Date(bid.createdAt)).toLocaleString()}</td>
                     <td>£ ${bid.amount}</td>
                 </tr>`;
