@@ -7,5 +7,6 @@ namespace AuctionApp.Services
     public interface IAuctionService
     {
         Task<IEnumerable<Auction>> List();
+        Task CloseAuctions();
     }
 }

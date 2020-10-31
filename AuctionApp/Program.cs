@@ -8,7 +8,10 @@ namespace AuctionApp
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().SeedData().Run();
+            CreateHostBuilder(args).Build()
+                .SeedData()
+                .StartBidClosingService()
+                .Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

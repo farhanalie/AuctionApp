@@ -37,6 +37,8 @@ $(function () {
         }
     });
 
+    connection.on("AuctionClosed", onAuctionClosed);
+
     connection.onreconnecting(error => {
         console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
         disableBidding();
@@ -115,7 +117,7 @@ $(function () {
             const auctionExpiry = new Date(expiry);
             const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
             flipDown.start();
-            flipDown.ifEnded(onBidExpired);
+            //flipDown.ifEnded(onAuctionClosed);
             getBids(auctionId);
 
             
@@ -238,8 +240,14 @@ $(function () {
         });
     }
 
-    function onBidExpired() {
+    function onAuctionClosed(winnerUserId) {
         disableBidding();
+        if (winnerUserId) {
+            const u = userId === winnerUserId ? "You" : winnerUserId;
+            alert(u+" won the auction");
+        } else {
+            alert("Auction is closed. No one placed a bid or reach the reserve price");
+        }
     }
 
     function disableBidding() {
