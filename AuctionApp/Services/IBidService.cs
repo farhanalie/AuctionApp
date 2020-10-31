@@ -6,7 +6,7 @@ namespace AuctionApp.Services
 {
     public interface IBidService
     {
-        Task<bool> Add(Bid bid);
+        Task<bool> Add(Bid bid, bool bypassHighestRule = false);
         Task<IEnumerable<Bid>> List(string auctionId);
     }
 }

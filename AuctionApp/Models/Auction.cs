@@ -9,5 +9,7 @@ namespace AuctionApp.Models
         public DateTimeOffset? ExpiredAt { get; set; }
         public bool Closed { get; set; }
         public string WinnerUserId { get; set; }
+        public int? BuyNowPrice { get; set; }
+        public int? BuyNowThresholdPrice { get; set; }
     }
 }

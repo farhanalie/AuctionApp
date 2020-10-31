@@ -24,13 +24,13 @@ namespace AuctionApp.Services.Implementations
             _hubContext = hubContext;
         }
 
-        public async Task<bool> Add(Bid bid)
+        public async Task<bool> Add(Bid bid, bool bypassHighestRule = false)
         {
             var currentBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + bid.AuctionId);
             if (currentBid != null && bid.Amount <= currentBid.Amount)
                 throw new BadRequestException("amount should be more than max bid");
             
-            if (currentBid != null && bid.UserId == currentBid.UserId)
+            if (bypassHighestRule == false && currentBid != null && bid.UserId == currentBid.UserId)
                 throw new BadRequestException("You are already the highest bidder");
 
             bid.CreatedAt = DateTime.UtcNow;
@@ -39,7 +39,9 @@ namespace AuctionApp.Services.Implementations
             await _database.AddAsync(Constants.Key.CurrentBidBase+bid.AuctionId, bid);
             if (added)
             {
-                await _hubContext.Clients.Group(bid.AuctionId).SendAsync("ReceiveBid", bid);
+#pragma warning disable 4014
+                _hubContext.Clients.Group(bid.AuctionId).SendAsync("ReceiveBid", bid);
+#pragma warning restore 4014
                 return added;
             }
 

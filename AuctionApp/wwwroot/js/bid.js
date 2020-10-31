@@ -4,26 +4,17 @@
 $(function () {
     const pendingBidsQueue = new Queue();
     let listOfBidsLoaded = false;
-    let currentBid = { amount: 0};
+    let currentBid = { amount: 0 };
+    const auction = { auctionId: null, buyNowPrice: null, buyNowThresholdPrice: null, expiry: null, winnerUserId: null };
     let userId = "";
-    const apiBaseUrl = "/api/bids/";
+    const apiBidsUrl = "/api/bids/";
+    const apiAuctionsUrl = "/api/auctions/";
+
     const connection = new signalR.HubConnectionBuilder()
                             .withUrl("/bidhub")
                             .withAutomaticReconnect()
                             .build();
     signalrStart();
-
-    async function signalrStart() {
-        try {
-            await connection.start();
-            console.assert(connection.state === signalR.HubConnectionState.Connected);
-            console.log("SignalR Connected.");
-        } catch (err) {
-            console.assert(connection.state === signalR.HubConnectionState.Disconnected);
-            console.log(err);
-            setTimeout(() => start(), 5000);
-        }
-    };
 
     connection.on("ReceiveBid", function (bid) {
         if (listOfBidsLoaded === true) {
@@ -31,7 +22,7 @@ $(function () {
             $("#amount").val(currentBid.amount + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
             bindCurrentBid();
-            bindReservePrice();
+            bindReserveAndBuyNowPrice();
         } else {
             pendingBidsQueue.enqueue(bid);
         }
@@ -42,21 +33,21 @@ $(function () {
     connection.onreconnecting(error => {
         console.assert(connection.state === signalR.HubConnectionState.Reconnecting);
         disableBidding();
-        $("#reconnecting-alert").show();
+        $("#error-alert").text("Connection to auction is lost. we are trying to connect you.").show();
+
     });
 
     connection.onreconnected(connectionId => {
         console.assert(connection.state === signalR.HubConnectionState.Connected);
         enableBidding();
-        $("#reconnecting-alert").hide();
-        $("#reconnected-alert").hide();
-
+        $("#error-alert").hide();
+        $("#reconnected-alert").show();
     });
 
     connection.onclose(error => {
         console.assert(connection.state === signalR.HubConnectionState.Disconnected);
         disableBidding();
-        $("#disconnected-alert").show();
+        $("#error-alert").text("Connection to auction is lost. Try refreshing this page to restart the connection.").show();
     });
 
     $("#connectButton").click(function () {
@@ -66,7 +57,7 @@ $(function () {
     $("#placeButton").click(function () {
 
         const amount = $("#amount").val();
-        const auctionId = $("#auctionId").val();
+        auction.auctionId = $("#auctionId").val();
 
         if (amount <= currentBid.amount) {
             alert("amount should be more than max bid");
@@ -76,11 +67,11 @@ $(function () {
             const bid = {
                 UserId: userId,
                 Amount: Number(amount),
-                AuctionId: auctionId
+                AuctionId: auction.auctionId
             };
 
             $.ajax({
-                url: apiBaseUrl,
+                url: apiBidsUrl,
                 dataType: "json",
                 type: "POST",
                 data: JSON.stringify(bid),
@@ -104,33 +95,74 @@ $(function () {
         event.preventDefault();
     });
 
+    $("#buyNowButton").click(function () {
+
+        if (currentBid.amount >= auction.buyNowPrice) {
+            alert("Auction cannot be buy now, as it already have a equal or greater bid");
+        } else {
+            disableBidding();
+            auction.winnerUserId = userId;
+            $.ajax({
+                url: apiAuctionsUrl,
+                dataType: "json",
+                type: "POST",
+                data: JSON.stringify(auction),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    console.log("successful buy now", result);
+                    $("#flipdown").hide();
+                },
+                error: function (err) {
+                    enableBidding();
+                    console.error(err.responseText);
+                    if (err.responseJSON && err.responseJSON.Error.StatusCode === 400) {
+                        alert(err.responseJSON.Error.Message);
+                    } else {
+                        alert("failed to add request");
+                    }
+                }
+            });
+        }
+    });
+
+    async function signalrStart() {
+        try {
+            await connection.start();
+            console.assert(connection.state === signalR.HubConnectionState.Connected);
+            console.log("SignalR Connected.");
+        } catch (err) {
+            console.assert(connection.state === signalR.HubConnectionState.Disconnected);
+            console.log(err);
+            setTimeout(() => start(), 5000);
+        }
+    };
+
     async function subscribeToAuction() {
         try {
             const selectedAuction = $("#auctionId option:selected");
-            const auctionId = $(selectedAuction).val();
-
-            await connection.invoke("subscribeToAuction", auctionId);
+            auction.auctionId = $(selectedAuction).val();
+            await connection.invoke("subscribeToAuction", auction.auctionId);
 
             userId = $("#userId").prop("disabled", true).val();
             $("#auctionId").prop("disabled", true);
-            const expiry = $(selectedAuction).data("expiry");
-            const auctionExpiry = new Date(expiry);
+            auction.expiry = $(selectedAuction).data("expiry");
+            const auctionExpiry = new Date(auction.expiry);
             const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
             flipDown.start();
             //flipDown.ifEnded(onAuctionClosed);
-            getBids(auctionId);
+            getBids();
 
             
         } catch (err) {
             console.error(err);
-            $("#disconnected-alert").show();
+            $("#error-alert").text("Connection to auction is lost. Try refreshing this page to restart the connection.").show();
         }
     }
 
-    function getBids(auctionId) {
+    function getBids() {
         $("#loading").show();
         $.ajax({
-            url: apiBaseUrl + auctionId,
+            url: apiBidsUrl + auction.auctionId,
             dataType: "json",
             type: "GET",
             contentType: "application/json; charset=utf-8",
@@ -175,8 +207,8 @@ $(function () {
             $("#amount").val(currentBid.amount + 1000);
         }
 
-        bindReservePrice();
         bindCurrentBid();
+        bindReserveAndBuyNowPrice();
 
         $("#bid-container").show();
         $("#connectButton").hide();
@@ -196,8 +228,9 @@ $(function () {
         currentBidContainer.show();
     }
 
-    function bindReservePrice() {
-        const reservePrice = $("#auctionId option:selected").data("reserve-price");
+    function bindReserveAndBuyNowPrice() {
+        const selected = $("#auctionId option:selected");
+        const reservePrice = selected.data("reserve-price");
         if (reservePrice) {
             $("#reserve-price").text(reservePrice);
             const reservePriceContainer = $("#reserve-price-container").val(reservePrice);
@@ -208,6 +241,19 @@ $(function () {
             }
             reservePriceContainer.show();
         }
+
+        // buy now
+        auction.buyNowPrice = selected.data("buynow-price");
+        if (auction.buyNowPrice) {
+            auction.buyNowThresholdPrice = selected.data("buynow-threshold-price");
+            if (currentBid.amount < auction.buyNowThresholdPrice) {
+                $("#buyNowButton").show().children(":first").text(auction.buyNowPrice);
+            } else {
+                $("#buyNowButton").hide();
+            }
+        }
+
+        
     }
 
     function createRowHtml(bid) {

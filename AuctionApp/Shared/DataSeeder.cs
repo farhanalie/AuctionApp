@@ -35,11 +35,11 @@ namespace AuctionApp.Shared
             {
                 var auctions = new List<Auction>
                 {
-                    new Auction{AuctionId = "Auction1", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(5)},
+                    new Auction{AuctionId = "Auction1", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(5), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000},
                     new Auction{AuctionId = "Auction2", ReservePrice = 10000, ExpiredAt = DateTime.UtcNow.AddDays(6)},
-                    new Auction{AuctionId = "Auction3", ReservePrice = 5000, ExpiredAt = DateTime.UtcNow.AddMinutes(1)},
-                    new Auction{AuctionId = "Auction4", ReservePrice = null, ExpiredAt = DateTime.UtcNow.AddDays(8)},
-                    new Auction{AuctionId = "Auction5", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(9)},
+                    new Auction{AuctionId = "Auction3", ReservePrice = 5000, ExpiredAt = DateTime.UtcNow.AddMinutes(1), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000},
+                    new Auction{AuctionId = "Auction4", ReservePrice = null, ExpiredAt = DateTime.UtcNow.AddDays(8), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000},
+                    new Auction{AuctionId = "Auction5", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(9), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000},
                 };
                 var items = new List<Tuple<string, Auction>>();
                 items.AddRange(auctions.Select(auction => new Tuple<string, Auction>(Constants.Key.AuctionBase + auction.AuctionId, auction)));

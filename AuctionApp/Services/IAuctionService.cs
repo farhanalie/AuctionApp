@@ -8,5 +8,6 @@ namespace AuctionApp.Services
     {
         Task<IEnumerable<Auction>> List();
         Task CloseAuctions();
+        Task<bool> BuyNow(Auction request);
     }
 }

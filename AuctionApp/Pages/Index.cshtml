@@ -11,11 +11,8 @@
 }
 
 <div class="container">
-    <div id="disconnected-alert" class="alert alert-danger" role="alert" style="display: none">
+    <div id="error-alert" class="alert alert-danger" role="alert" style="display: none">
         Connection to auction is lost. Try refreshing this page to restart the connection.
-    </div>
-    <div id="reconnecting-alert" class="alert alert-danger" role="alert" style="display: none">
-        Connection to auction is lost. we are trying to connect you.
     </div>
     <div id="reconnected-alert" class="alert alert-success" role="alert" style="display: none">
         Connection reestablished. You can bid now.
@@ -32,7 +29,7 @@
                 <select id="auctionId" class="form-control">
                     @foreach (var auction in Model.Auctions)
                     {
-                        <option selected="@auctionSelected" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
+                        <option selected="@auctionSelected" data-buynow-price="@auction.BuyNowPrice" data-buynow-threshold-price="@auction.BuyNowThresholdPrice" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
                         if (auctionSelected)
                         {
                             auctionSelected = false;
@@ -56,7 +53,8 @@
             <div class="form-group">
                 <label for="amount" class="mr-sm-5">Amount:</label>
                 <input type="number" class="form-control mr-sm-5" value="1000" placeholder="Enter amount" id="amount">
-                <input type="button" id="placeButton" class="btn btn-primary" value="Place Bid" />
+                <input type="button" id="placeButton" class="btn btn-primary mr-sm-5" value="Place Bid" />
+                <a id="buyNowButton" style="display: none" class="btn btn-success" href="#" >Buy now for <span></span> </a>
             </div>
         </div>
 
