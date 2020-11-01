@@ -1,6 +1,6 @@
 ﻿namespace AuctionApp.Models
 {
-    public class UserAuction 
+    public class UserAuctionMaxBid 
     {
         public string UserId { get; set; }
         public string AuctionId { get; set; }

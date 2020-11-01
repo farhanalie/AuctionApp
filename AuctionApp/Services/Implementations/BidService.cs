@@ -24,31 +24,108 @@ namespace AuctionApp.Services.Implementations
             _hubContext = hubContext;
         }
 
-        public async Task<bool> Add(Bid bid, bool bypassHighestRule = false)
+        public async Task<bool> Add(Bid bid, bool bypassRules = false)
         {
             var currentBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + bid.AuctionId);
-            if (currentBid != null && bid.Amount <= currentBid.Amount)
-                throw new BadRequestException("amount should be more than max bid");
-            
-            if (bypassHighestRule == false && currentBid != null && bid.UserId == currentBid.UserId)
-                throw new BadRequestException("You are already the highest bidder");
-
-            bid.CreatedAt = DateTime.UtcNow;
-            bid.BidId = Guid.NewGuid();
-            var added = await _database.SetAddAsync(Constants.Key.BidsBase+bid.AuctionId, bid);
-            await _database.AddAsync(Constants.Key.CurrentBidBase+bid.AuctionId, bid);
-            if (added)
+            if (!bypassRules)
             {
-#pragma warning disable 4014
-                _hubContext.Clients.Group(bid.AuctionId).SendAsync("ReceiveBid", bid);
-#pragma warning restore 4014
-                return added;
+                if (currentBid != null && bid.Amount <= currentBid.Amount)
+                    throw new BadRequestException("amount should be more than max bid");
+            
+                if (currentBid != null && bid.UserId == currentBid.UserId)
+                    throw new BadRequestException("You are already the highest bidder");
+            }
+
+            var maxBid = await _database.GetAsync<UserAuctionMaxBid>(Constants.Key.AuctionMaxBidBase + bid.AuctionId);
+            if (maxBid== null)
+            {
+                var added = await AddBidAndNotify(bid);
+                if (added)
+                    return true;
+            }
+            else if (maxBid.MaxBid == bid.Amount)
+            {
+                // consume max
+                bid.UserId = maxBid.UserId;
+                var added = await AddBidAndNotify(bid);
+                if (added)
+                    return true;
+            }
+            else if (maxBid.MaxBid > bid.Amount)
+            {
+                // if its from current user, he have placed a bid by now so we skip his bid
+                if (currentBid!=null && bid.UserId==currentBid.UserId)
+                {
+                    // consume max
+                    bid.UserId = maxBid.UserId;
+                    bid.Amount += 1000;
+                    var added = await AddBidAndNotify(bid);
+                    if (added)
+                        return true;
+                }
+                else
+                {
+                    var added = await AddBidAndNotify(bid);
+
+                    if (added)
+                    {
+                        // consume max
+                        bid.UserId = maxBid.UserId;
+                        bid.Amount += 1000;
+                        added = await AddBidAndNotify(bid);
+                        if (added)
+                            return true;
+                    }
+                }
+            }
+            else if (maxBid.MaxBid < bid.Amount)
+            {
+                
+                // if its from current user he have placed a bid by now so we skip it 
+                if (currentBid != null && maxBid.MaxBid == currentBid.Amount)
+                {
+                    var added = await AddBidAndNotify(bid);
+                    if (added)
+                        return true;
+                }
+                else
+                {
+                    // consume max
+                    var consumeMaxBid = new Bid
+                    {
+                        UserId = maxBid.UserId,
+                        AuctionId = bid.AuctionId,
+                        Amount = maxBid.MaxBid
+                    };
+                    var added = await AddBidAndNotify(consumeMaxBid);
+                    if (added)
+                    {
+                        added = await AddBidAndNotify(bid);
+                        if (added)
+                            return true;
+                    }
+                }
             }
 
             // Todo: handle if bid couldn't be added to set
             var error = $"Bid not added to redis set: {bid.UserId}, {bid.Amount}";
             _logger.Log(LogLevel.Information, error);
             throw new Exception(error);
+        }
+
+        private async Task<bool> AddBidAndNotify(Bid bid)
+        {
+            bid.CreatedAt = DateTime.UtcNow;
+            bid.BidId = Guid.NewGuid();
+            var added = await _database.SetAddAsync(Constants.Key.BidsBase + bid.AuctionId, bid);
+            await _database.AddAsync(Constants.Key.CurrentBidBase + bid.AuctionId, bid);
+            if (added)
+            {
+            #pragma warning disable 4014
+                _hubContext.Clients.Group(bid.AuctionId).SendAsync("ReceiveBid", bid);
+            #pragma warning restore 4014
+            }
+            return added;
         }
 
         public async Task<IEnumerable<Bid>> List(string auctionId)

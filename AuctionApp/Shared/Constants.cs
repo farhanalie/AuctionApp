@@ -9,6 +9,8 @@
             public const string AuctionBase = "Auction:";
             public const string Users = nameof(Users);
             public const string CurrentBidBase = "CurrentBid:";
+            public const string AuctionMaxBidBase = "AuctionMaxBid:";
+            public const string UserMaxBidsBase = "UserMaxBids:";
         }
     }
 }

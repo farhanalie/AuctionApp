@@ -29,7 +29,7 @@
                 <select id="auctionId" class="form-control">
                     @foreach (var auction in Model.Auctions)
                     {
-                        <option selected="@auctionSelected" data-buynow-price="@auction.BuyNowPrice" data-buynow-threshold-price="@auction.BuyNowThresholdPrice" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
+                        <option selected="@auctionSelected" data-opening-bid="@auction.OpeningBid" data-buynow-price="@auction.BuyNowPrice" data-buynow-threshold-price="@auction.BuyNowThresholdPrice" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
                         if (auctionSelected)
                         {
                             auctionSelected = false;
@@ -37,12 +37,7 @@
                     }
                 </select>
             </div>
-            @*<div class="form-group">
-                    <label for="maxBid">Max bid:</label>
-                    <input type="number" class="form-control" placeholder="Enter max bid" id="maxBid">
-                </div>*@
             <button type="button" id="connectButton" class="btn btn-primary">Connect</button>
-
         </div>
     </div>
     <div class="row" id="bid-container" style="display: none">
@@ -54,7 +49,8 @@
                 <label for="amount" class="mr-sm-5">Amount:</label>
                 <input type="number" class="form-control mr-sm-5" value="1000" placeholder="Enter amount" id="amount">
                 <input type="button" id="placeButton" class="btn btn-primary mr-sm-5" value="Place Bid" />
-                <a id="buyNowButton" style="display: none" class="btn btn-success" href="#" >Buy now for <span></span> </a>
+                <input type="button" id="maxBidButton" class="btn btn-danger mr-sm-5" value="Set Max Bid" />
+                <a id="buyNowButton" style="display: none" class="btn btn-success mr-sm-5" href="#" >Buy now for <span></span> </a>
             </div>
         </div>
 
@@ -66,13 +62,14 @@
     </div>
     <div class="row mb-3">
         <div class="col-md-3">
-            <h1 id="current-bid-container" style="display: none" class="mt-5"><span class="badge badge-secondary">Bid <span id="current-bid"></span></span></h1>
+            <h2 id="current-bid-container" style="display: none" class="mr-sm-2"><span class="badge badge-danger">Bid: <span id="current-bid"></span></span></h2>
+            <h2 class="mt-2" style="display: none"><span class="badge badge-success">Your Max Bid: <span id="user-max-bid"></span></span></h2>
         </div>
         <div class="col-md-6">
             <div id="flipdown" class="flipdown"></div>
         </div>
         <div class="col-md-3">
-            <h1 id="reserve-price-container" style="display: none" class="mt-5"><span class="badge badge-secondary">Reserve <span id="reserve-price"></span></span></h1>
+            <h2 id="reserve-price-container" style="display: none"><span class="badge badge-danger">Reserve: <span id="reserve-price"></span></span></h2>
         </div>
     </div>
     <div class="row">

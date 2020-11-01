@@ -9,5 +9,7 @@ namespace AuctionApp.Services
         Task<IEnumerable<Auction>> List();
         Task CloseAuctions();
         Task<bool> BuyNow(Auction request);
+        Task<int> SetMaxBid(UserAuctionMaxBid maxBid);
+        Task<int> GetMaxBid(string auctionId, string userId);
     }
 }

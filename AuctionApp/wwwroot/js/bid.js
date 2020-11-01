@@ -1,9 +1,8 @@
 ﻿"use strict";
-
-
 $(function () {
     const pendingBidsQueue = new Queue();
     let listOfBidsLoaded = false;
+    let userMaxBidAmount = null;
     let currentBid = { amount: 0 };
     const auction = { auctionId: null, buyNowPrice: null, buyNowThresholdPrice: null, expiry: null, winnerUserId: null };
     let userId = "";
@@ -22,7 +21,7 @@ $(function () {
             $("#amount").val(currentBid.amount + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
             bindCurrentBid();
-            bindReserveAndBuyNowPrice();
+            bindReserveBuyNowPriceAndMaxPrice();
         } else {
             pendingBidsQueue.enqueue(bid);
         }
@@ -95,6 +94,53 @@ $(function () {
         event.preventDefault();
     });
 
+    $("#maxBidButton").click(function () {
+
+        const amount = $("#amount").val();
+        auction.auctionId = $("#auctionId").val();
+
+        if (amount <= currentBid.amount) {
+            alert("amount should be more than max bid");
+        } else if (amount <= userMaxBidAmount) {
+            alert("Please enter amount greater than your current max amount");
+        }
+        // Todo: discuss with client
+        //else if (userId === currentBid.userId) {
+        //    alert("You are already the highest bidder");
+        //}
+        else {
+            const userMaxBid = {
+                UserId: userId,
+                MaxBid: Number(amount),
+                AuctionId: auction.auctionId
+            };
+
+            $.ajax({
+                url: apiAuctionsUrl +"SetMaxBid",
+                dataType: "json",
+                type: "POST",
+                data: JSON.stringify(userMaxBid),
+                contentType: "application/json; charset=utf-8",
+                success: function (result) {
+                    console.log("successfully placed a max bid", result);
+                    // users max amount
+                    userMaxBidAmount = result;
+                    $("#user-max-bid").text(userMaxBidAmount).parent().removeClass("badge-danger").addClass("badge-success").closest("h2").show();
+                },
+                error: function (err) {
+                    console.error(err.responseText);
+                    if (err.responseJSON && err.responseJSON.Error.StatusCode === 400) {
+                        alert(err.responseJSON.Error.Message);
+                    } else {
+                        alert("failed to add request");
+                    }
+                }
+            });
+        }
+
+        event.preventDefault();
+    });
+
     $("#buyNowButton").click(function () {
 
         if (currentBid.amount >= auction.buyNowPrice) {
@@ -103,7 +149,7 @@ $(function () {
             disableBidding();
             auction.winnerUserId = userId;
             $.ajax({
-                url: apiAuctionsUrl,
+                url: apiAuctionsUrl + "BuyNow",
                 dataType: "json",
                 type: "POST",
                 data: JSON.stringify(auction),
@@ -140,10 +186,18 @@ $(function () {
     async function subscribeToAuction() {
         try {
             const selectedAuction = $("#auctionId option:selected");
+            const openingBid = $(selectedAuction).data("opening-bid");
+            if (openingBid) {
+                $("#amount").val(openingBid);
+            }
             auction.auctionId = $(selectedAuction).val();
+
             await connection.invoke("subscribeToAuction", auction.auctionId);
 
             userId = $("#userId").prop("disabled", true).val();
+
+            getMyMaxBid();
+
             $("#auctionId").prop("disabled", true);
             auction.expiry = $(selectedAuction).data("expiry");
             const auctionExpiry = new Date(auction.expiry);
@@ -173,6 +227,23 @@ $(function () {
             error: function (err) {
                 $("#loading").hide();
                 alert("failed to get bids from server");
+                console.error(err.responseText);
+            }
+        });
+    }
+
+    function getMyMaxBid() {
+        $.ajax({
+            url: apiAuctionsUrl + "GetMaxBid" + "/" + auction.auctionId + "/" + userId,
+            dataType: "json",
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            success: function (response) {
+                console.log("receive user max bid", response);
+                userMaxBidAmount = response;
+                $("#user-max-bid").text(userMaxBidAmount).parent().removeClass("badge-danger").addClass("badge-success").closest("h2").show();
+            },
+            error: function (err) {
                 console.error(err.responseText);
             }
         });
@@ -208,7 +279,7 @@ $(function () {
         }
 
         bindCurrentBid();
-        bindReserveAndBuyNowPrice();
+        bindReserveBuyNowPriceAndMaxPrice();
 
         $("#bid-container").show();
         $("#connectButton").hide();
@@ -221,23 +292,23 @@ $(function () {
         $("#current-bid").text(currentBid.amount);
         const currentBidContainer = $("#current-bid-container").val(currentBid.amount);
         if (userId === currentBid.userId) {
-            currentBidContainer.children(":first").removeClass("badge-secondary").addClass("badge-success");
+            currentBidContainer.children(":first").removeClass("badge-danger").addClass("badge-success");
         } else {
-            currentBidContainer.children(":first").removeClass("badge-success").addClass("badge-secondary");
+            currentBidContainer.children(":first").removeClass("badge-success").addClass("badge-danger");
         }
         currentBidContainer.show();
     }
 
-    function bindReserveAndBuyNowPrice() {
+    function bindReserveBuyNowPriceAndMaxPrice() {
         const selected = $("#auctionId option:selected");
         const reservePrice = selected.data("reserve-price");
         if (reservePrice) {
             $("#reserve-price").text(reservePrice);
             const reservePriceContainer = $("#reserve-price-container").val(reservePrice);
             if (currentBid.amount >= reservePrice) {
-                reservePriceContainer.children(":first").removeClass("badge-secondary").addClass("badge-success");
+                reservePriceContainer.children(":first").removeClass("badge-danger").addClass("badge-success");
             } else {
-                reservePriceContainer.children(":first").removeClass("badge-success").addClass("badge-secondary");
+                reservePriceContainer.children(":first").removeClass("badge-success").addClass("badge-danger");
             }
             reservePriceContainer.show();
         }
@@ -253,6 +324,12 @@ $(function () {
             }
         }
 
+        // users max amount
+            if (currentBid.amount > userMaxBidAmount) {
+                $("#user-max-bid").parent().removeClass("badge-success").addClass("badge-danger").closest("h2").show();
+            } else {
+                $("#user-max-bid").parent().removeClass("badge-danger").addClass("badge-success").closest("h2").show();
+            }
         
     }
 
