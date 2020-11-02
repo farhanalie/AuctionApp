@@ -27,6 +27,7 @@ namespace AuctionApp.Services.Implementations
         public async Task<bool> Add(Bid bid, bool bypassRules = false)
         {
             var currentBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + bid.AuctionId);
+            var auction = await _database.GetAsync<Auction>(Constants.Key.AuctionBase + bid.AuctionId);
             if (!bypassRules)
             {
                 if (currentBid != null && bid.Amount <= currentBid.Amount)
@@ -34,10 +35,10 @@ namespace AuctionApp.Services.Implementations
             
                 if (currentBid != null && bid.UserId == currentBid.UserId)
                     throw new BadRequestException("You are already the highest bidder");
+             
+                if (auction?.Closed == true)
+                    throw new BadRequestException("Invalid auction id provided");
             }
-            var auction = await _database.GetAsync<Auction>(Constants.Key.AuctionBase + bid.AuctionId);
-            if (auction?.Closed == true)
-                throw new BadRequestException("Invalid auction id provided");
 
             var maxBid = await _database.GetAsync<UserAuctionMaxBid>(Constants.Key.AuctionMaxBidBase + bid.AuctionId);
             if (maxBid== null)
@@ -56,13 +57,12 @@ namespace AuctionApp.Services.Implementations
             }
             else if (maxBid.MaxBid > bid.Amount)
             {
-                // if its from current user, he have placed a bid by now so we skip his bid
-                if (currentBid!=null && bid.UserId==currentBid.UserId)
+                if (currentBid != null && maxBid.MaxBid == currentBid.Amount)
                 {
                     // consume max
                     bid.UserId = maxBid.UserId;
                     bid.Amount += 1000;
-                    var added = await AddBidAndNotify(bid,auction);
+                    var added = await AddBidAndNotify(bid, auction);
                     if (added)
                         return true;
                 }
@@ -84,7 +84,6 @@ namespace AuctionApp.Services.Implementations
             else if (maxBid.MaxBid < bid.Amount)
             {
                 
-                // if its from current user he have placed a bid by now so we skip it 
                 if (currentBid != null && maxBid.MaxBid == currentBid.Amount)
                 {
                     var added = await AddBidAndNotify(bid, auction);
@@ -118,20 +117,31 @@ namespace AuctionApp.Services.Implementations
 
         private async Task<bool> AddBidAndNotify(Bid bid, Auction auction)
         {
+            
             bid.CreatedAt = DateTime.UtcNow;
             bid.BidId = Guid.NewGuid();
             var added = await _database.SetAddAsync(Constants.Key.BidsBase + bid.AuctionId, bid);
             await _database.AddAsync(Constants.Key.CurrentBidBase + bid.AuctionId, bid);
             if (added)
             {
-                if ((auction.ExpiredAt - bid.CreatedAt).TotalSeconds <= 60)
+#pragma warning disable 4014
+                if (auction.BuyNowPrice.HasValue && bid.Amount >= auction.BuyNowPrice)
+                {
+                    auction.Closed = true;
+                    auction.WinnerUserId = bid.UserId;
+                    var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
+                    if (updated)
+                    {
+                        _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
+                    }
+                }
+                else if ((auction.ExpiredAt - bid.CreatedAt).TotalSeconds <= 60)
                 {
                     auction.ExpiredAt = auction.ExpiredAt.AddMinutes(1);
                     var auctionAdded = await _database.AddAsync(Constants.Key.AuctionBase + bid.AuctionId, auction);
                 }
-#pragma warning disable 4014
                 _hubContext.Clients.Group(bid.AuctionId).SendAsync("ReceiveBid", bid, auction.ExpiredAt);
-            #pragma warning restore 4014
+#pragma warning restore 4014
             }
             return added;
         }

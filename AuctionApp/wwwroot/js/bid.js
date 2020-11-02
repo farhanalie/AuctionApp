@@ -368,6 +368,8 @@ $(function () {
     function onAuctionClosed(winnerUserId) {
         disableBidding();
         countDownTimer = new Date();
+        $("#count-down-container").hide();
+
         if (winnerUserId) {
             const u = userId === winnerUserId ? "You" : winnerUserId;
             alert(u + " won the auction");

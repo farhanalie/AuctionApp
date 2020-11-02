@@ -95,8 +95,28 @@ namespace AuctionApp.Services.Implementations
             if (!added)
                 throw new BadRequestException("Same Max Bid is already set for you.");
 
-            var existingMaxBidForAuction =
-                await _database.GetAsync<UserAuctionMaxBid>(Constants.Key.AuctionMaxBidBase + maxBid.AuctionId);
+            if (auction.BuyNowPrice.HasValue && maxBid.MaxBid >= auction.BuyNowPrice)
+            {
+                auction.Closed = true;
+                auction.WinnerUserId = maxBid.UserId;
+                var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
+                if (updated)
+                {
+                    _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
+                    var bid = new Bid()
+                    {
+                        UserId = maxBid.UserId,
+                        Amount = auction.BuyNowPrice.Value,
+                        AuctionId = auction.AuctionId
+                    };
+                    await _bidService.Add(bid, true);
+                    return maxBid.MaxBid;
+
+                }
+
+            }
+
+            var existingMaxBidForAuction = await _database.GetAsync<UserAuctionMaxBid>(Constants.Key.AuctionMaxBidBase + maxBid.AuctionId);
             if (existingMaxBidForAuction == null)
             {
                 #region first max bid for auction
@@ -210,23 +230,25 @@ namespace AuctionApp.Services.Implementations
                         auction.Closed = true;
 
                         var highestBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + auction.AuctionId);
-                        if (highestBid == null)
+                        if (highestBid == null || auction.ReservePrice.HasValue && highestBid.Amount < auction.ReservePrice)
                         {
 #pragma warning disable 4014
-                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
-
-                        }
-                        else if (auction.ReservePrice.HasValue && highestBid.Amount < auction.ReservePrice)
-                        {
-                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
+                            var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
+                            if (updated)
+                            {
+                                _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
+                            }
                         }
                         else
                         {
                             auction.WinnerUserId = highestBid.UserId;
-                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
+                            var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
+                            if (updated)
+                            {
+                                _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
+                            }
                         }
 #pragma warning restore 4014
-                        var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
                     }
                 }
             }
