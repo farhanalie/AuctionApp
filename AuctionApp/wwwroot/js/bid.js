@@ -8,20 +8,21 @@ $(function () {
     let userId = "";
     const apiBidsUrl = "/api/bids/";
     const apiAuctionsUrl = "/api/auctions/";
+    let countDownTimer = null;
 
     const connection = new signalR.HubConnectionBuilder()
-                            .withUrl("/bidhub")
-                            .withAutomaticReconnect()
-                            .build();
+        .withUrl("/bidhub")
+        .withAutomaticReconnect()
+        .build();
     signalrStart();
 
-    connection.on("ReceiveBid", function (bid) {
+    connection.on("ReceiveBid", function (bid, extendedExpiredAt) {
         if (listOfBidsLoaded === true) {
             currentBid = bid;
+            currentBid["extendedExpiredAt"] = extendedExpiredAt;
             $("#amount").val(currentBid.amount + 1000);
             $("#bidsTable > tbody").prepend(createRowHtml(bid));
-            bindCurrentBid();
-            bindReserveBuyNowPriceAndMaxPrice();
+            bindControls();
         } else {
             pendingBidsQueue.enqueue(bid);
         }
@@ -116,7 +117,7 @@ $(function () {
             };
 
             $.ajax({
-                url: apiAuctionsUrl +"SetMaxBid",
+                url: apiAuctionsUrl + "SetMaxBid",
                 dataType: "json",
                 type: "POST",
                 data: JSON.stringify(userMaxBid),
@@ -156,7 +157,7 @@ $(function () {
                 contentType: "application/json; charset=utf-8",
                 success: function (result) {
                     console.log("successful buy now", result);
-                    $("#flipdown").hide();
+                    //$("#flipdown").hide();
                 },
                 error: function (err) {
                     enableBidding();
@@ -200,13 +201,9 @@ $(function () {
 
             $("#auctionId").prop("disabled", true);
             auction.expiry = $(selectedAuction).data("expiry");
-            const auctionExpiry = new Date(auction.expiry);
-            const flipDown = new FlipDown(auctionExpiry.getTime() / 1000);
-            flipDown.start();
-            //flipDown.ifEnded(onAuctionClosed);
+            countDownTimer = new Date(auction.expiry);
+            initializeCountDown(countDownEnds);
             getBids();
-
-            
         } catch (err) {
             console.error(err);
             $("#error-alert").text("Connection to auction is lost. Try refreshing this page to restart the connection.").show();
@@ -278,8 +275,7 @@ $(function () {
             $("#amount").val(currentBid.amount + 1000);
         }
 
-        bindCurrentBid();
-        bindReserveBuyNowPriceAndMaxPrice();
+        bindControls();
 
         $("#bid-container").show();
         $("#connectButton").hide();
@@ -288,7 +284,8 @@ $(function () {
         //},5000);
     }
 
-    function bindCurrentBid() {
+    function bindControls() {
+
         $("#current-bid").text(currentBid.amount);
         const currentBidContainer = $("#current-bid-container").val(currentBid.amount);
         if (userId === currentBid.userId) {
@@ -297,9 +294,7 @@ $(function () {
             currentBidContainer.children(":first").removeClass("badge-success").addClass("badge-danger");
         }
         currentBidContainer.show();
-    }
 
-    function bindReserveBuyNowPriceAndMaxPrice() {
         const selected = $("#auctionId option:selected");
         const reservePrice = selected.data("reserve-price");
         if (reservePrice) {
@@ -325,12 +320,19 @@ $(function () {
         }
 
         // users max amount
-            if (currentBid.amount > userMaxBidAmount) {
-                $("#user-max-bid").parent().removeClass("badge-success").addClass("badge-danger").closest("h2").show();
-            } else {
-                $("#user-max-bid").parent().removeClass("badge-danger").addClass("badge-success").closest("h2").show();
+        if (currentBid.amount > userMaxBidAmount) {
+            $("#user-max-bid").parent().removeClass("badge-success").addClass("badge-danger").closest("h2").show();
+        } else {
+            $("#user-max-bid").parent().removeClass("badge-danger").addClass("badge-success").closest("h2").show();
+        }
+
+        // extended expiry
+        if (currentBid.extendedExpiredAt) {
+            if (getSecondsDiff(new Date(currentBid.extendedExpiredAt), new Date(auction.expiry))>0) {
+                countDownTimer = new Date(currentBid.extendedExpiredAt);
+                $("#extension-time-container").show();
             }
-        
+        }
     }
 
     function createRowHtml(bid) {
@@ -367,7 +369,7 @@ $(function () {
         disableBidding();
         if (winnerUserId) {
             const u = userId === winnerUserId ? "You" : winnerUserId;
-            alert(u+" won the auction");
+            alert(u + " won the auction");
         } else {
             alert("Auction is closed. No one placed a bid or reach the reserve price");
         }
@@ -375,10 +377,72 @@ $(function () {
 
     function disableBidding() {
         $("#placeButton").prop("disabled", true);
+        $("#buyNowButton").prop("disabled", true);
+        $("#maxBidButton").prop("disabled", true);
     }
 
     function enableBidding() {
         $("#placeButton").prop("disabled", false);
+        $("#buyNowButton").prop("disabled", false);
+        $("#maxBidButton").prop("disabled", false);
+    }
+
+    function countDownEnds() {
+        console.log("time ends");
+        //var extendedDate = new Date(currentBid.extendedExpiredAt);
+        //if (getSecondsDiff(new Date(), extendedDate )<=60) {
+        //    // extension period
+        //    countDownTimer = extendedDate;
+        //    initializeCountDown(countDownEnds);
+        //}
+    }
+
+    /*count down*/
+    function getTimeRemaining(endtime) {
+        const total = Date.parse(endtime) - Date.parse(new Date());
+        const seconds = Math.floor((total / 1000) % 60);
+        const minutes = Math.floor((total / 1000 / 60) % 60);
+        const hours = Math.floor((total / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(total / (1000 * 60 * 60 * 24));
+
+        return {
+            total,
+            days,
+            hours,
+            minutes,
+            seconds
+        };
+    }
+
+    function initializeCountDown(callback) {
+        $("#count-down-container").show();
+        const clock = document.getElementById("count-down-container");
+        const daysSpan = clock.querySelector('.days');
+        const hoursSpan = clock.querySelector('.hours');
+        const minutesSpan = clock.querySelector('.minutes');
+        const secondsSpan = clock.querySelector('.seconds');
+
+        function updateClock() {
+            const t = getTimeRemaining(countDownTimer);
+
+            daysSpan.innerHTML = t.days;
+            hoursSpan.innerHTML = ("0" + t.hours).slice(-2);
+            minutesSpan.innerHTML = ("0" + t.minutes).slice(-2);
+            secondsSpan.innerHTML = ("0" + t.seconds).slice(-2);
+
+            if (t.total <= 0) {
+                callback();
+                clearInterval(timeInterval);
+            }
+        }
+
+        updateClock();
+        const timeInterval = setInterval(updateClock, 1000);
+    }
+
+    function getSecondsDiff(date1, date2) {
+        const dif = date1 - date2;
+        return Math.floor(Math.abs((dif / 1000)));
     }
 });
 

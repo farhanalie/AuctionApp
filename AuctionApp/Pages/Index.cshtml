@@ -7,7 +7,6 @@
 
 @section Head
 {
-    <link href="~/lib/flip-down/flipdown.min.css" rel="stylesheet" />
 }
 
 <div class="container">
@@ -29,7 +28,7 @@
                 <select id="auctionId" class="form-control">
                     @foreach (var auction in Model.Auctions)
                     {
-                        <option selected="@auctionSelected" data-opening-bid="@auction.OpeningBid" data-buynow-price="@auction.BuyNowPrice" data-buynow-threshold-price="@auction.BuyNowThresholdPrice" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt?.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
+                        <option selected="@auctionSelected" data-opening-bid="@auction.OpeningBid" data-buynow-price="@auction.BuyNowPrice" data-buynow-threshold-price="@auction.BuyNowThresholdPrice" data-reserve-price="@auction.ReservePrice" data-expiry="@auction.ExpiredAt.ToString("yyyy-MM-ddTHH:mm:ssZ")" value="@auction.AuctionId">@auction.AuctionId</option>
                         if (auctionSelected)
                         {
                             auctionSelected = false;
@@ -66,7 +65,25 @@
             <h2 class="mt-2" style="display: none"><span class="badge badge-success">Your Max Bid: <span id="user-max-bid"></span></span></h2>
         </div>
         <div class="col-md-6">
-            <div id="flipdown" class="flipdown"></div>
+            <div id="count-down-container" style="display: none" class="count-down" >
+                <div>
+                    <span class="days"></span>
+                    <div class="smalltext">Days</div>
+                </div>
+                <div>
+                    <span class="hours"></span>
+                    <div class="smalltext">Hours</div>
+                </div>
+                <div>
+                    <span class="minutes"></span>
+                    <div class="smalltext">Minutes</div>
+                </div>
+                <div>
+                    <span class="seconds"></span>
+                    <div class="smalltext">Seconds</div>
+                </div>
+            </div>
+            <div id="extension-time-container" style="display: none" > <h2><span class="badge badge-success">Extension Period Active</span></h2> </div>
         </div>
         <div class="col-md-3">
             <h2 id="reserve-price-container" style="display: none"><span class="badge badge-danger">Reserve: <span id="reserve-price"></span></span></h2>
@@ -94,7 +111,6 @@
 
 @section Scripts
 {
-    <script src="~/lib/flip-down/flipdown.min.js"></script>
     <script src="~/lib/lodash/lodash.min.js"></script>
     <script src="~/js/Queue.js"></script>
     <script src="~/js/signalr/dist/browser/signalr.min.js"></script>

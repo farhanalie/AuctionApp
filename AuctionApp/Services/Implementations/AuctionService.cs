@@ -80,6 +80,8 @@ namespace AuctionApp.Services.Implementations
             var auction = await _database.GetAsync<Auction>(Constants.Key.AuctionBase + maxBid.AuctionId);
             if (auction == null)
                 throw new BadRequestException("Invalid auction id provided");
+            if (auction.Closed)
+                throw new BadRequestException("auction is already closed");
 
             var userExist = await _database.SetContainsAsync(Constants.Key.Users, new User { UserId = maxBid.UserId });
             if (!userExist)
@@ -197,35 +199,40 @@ namespace AuctionApp.Services.Implementations
 
         public async Task CloseAuctions()
         {
-            var auctions = await List();
-            var expired = auctions.Where(x => x.ExpiredAt <= DateTime.UtcNow).ToList();
-            if (expired.Any())
+            try
             {
-                foreach (var auction in expired)
+                var auctions = await List();
+                var expired = auctions.Where(x => x.ExpiredAt <= DateTimeOffset.UtcNow).ToList();
+                if (expired.Any())
                 {
-                    auction.Closed = true;
-
-                    var highestBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + auction.AuctionId);
-                    if (highestBid == null)
+                    foreach (var auction in expired)
                     {
+                        auction.Closed = true;
+
+                        var highestBid = await _database.GetAsync<Bid>(Constants.Key.CurrentBidBase + auction.AuctionId);
+                        if (highestBid == null)
+                        {
 #pragma warning disable 4014
-                        _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
+                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
 
-                    }
-                    else if (auction.ReservePrice.HasValue && highestBid.Amount < auction.ReservePrice)
-                    {
-                        _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
-                    }
-                    else
-                    {
-                        auction.WinnerUserId = highestBid.UserId;
-                        _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
-                    }
+                        }
+                        else if (auction.ReservePrice.HasValue && highestBid.Amount < auction.ReservePrice)
+                        {
+                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", null);
+                        }
+                        else
+                        {
+                            auction.WinnerUserId = highestBid.UserId;
+                            _hubContext.Clients.Group(auction.AuctionId).SendAsync("AuctionClosed", auction.WinnerUserId);
+                        }
 #pragma warning restore 4014
+                        var updated = await _database.AddAsync(Constants.Key.AuctionBase + auction.AuctionId, auction);
+                    }
                 }
-                var items = new List<Tuple<string, Auction>>();
-                items.AddRange(expired.Select(auction => new Tuple<string, Auction>(Constants.Key.AuctionBase + auction.AuctionId, auction)));
-                var updated = await _database.AddAllAsync(items);
+            }
+            catch (Exception e)
+            {
+                _logger.Log(LogLevel.Error, "Exception occurred while closing the job", e);
             }
         }
     }

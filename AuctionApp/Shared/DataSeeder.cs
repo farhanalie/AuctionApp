@@ -37,7 +37,7 @@ namespace AuctionApp.Shared
                 {
                     new Auction{AuctionId = "Auction1", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(5), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000, OpeningBid = 10000},
                     new Auction{AuctionId = "Auction2", ReservePrice = 10000, ExpiredAt = DateTime.UtcNow.AddDays(6)},
-                    new Auction{AuctionId = "Auction3", ReservePrice = 5000, ExpiredAt = DateTime.UtcNow.AddMinutes(1), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000, OpeningBid = 10000},
+                    new Auction{AuctionId = "Auction3", ReservePrice = 5000, ExpiredAt = DateTime.UtcNow.AddMinutes(2), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000, OpeningBid = 10000},
                     new Auction{AuctionId = "Auction4", ReservePrice = null, ExpiredAt = DateTime.UtcNow.AddDays(8), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000},
                     new Auction{AuctionId = "Auction5", ReservePrice = 20000, ExpiredAt = DateTime.UtcNow.AddDays(9), BuyNowPrice = 50000, BuyNowThresholdPrice = 35000, OpeningBid = 10000},
                 };
